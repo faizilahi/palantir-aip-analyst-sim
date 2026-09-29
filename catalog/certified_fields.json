@@ -1,0 +1,10 @@
+{
+  "certified": [
+    {"object": "Encounter", "field": "encounter_id", "certified": true},
+    {"object": "Encounter", "field": "length_of_stay_hours", "certified": true},
+    {"object": "Encounter", "field": "status", "certified": true},
+    {"object": "Department", "field": "department_name", "certified": true},
+    {"object": "Encounter", "field": "raw_notes", "certified": false}
+  ],
+  "freshness_sla_hours": 4
+}

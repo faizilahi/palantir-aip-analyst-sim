@@ -1,47 +1,22 @@
-"""Build analyst corpus from ontology-style KPI files (synthetic)."""
-from __future__ import annotations
-
-import argparse
-import shutil
 from pathlib import Path
-
 import pandas as pd
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--source", type=Path, default=None, help="Optional foundry-lab derived dir")
-    args = parser.parse_args()
-    out = Path("data/corpus")
-    out.mkdir(parents=True, exist_ok=True)
-
-    sibling = Path(__file__).resolve().parents[2] / "palantir-foundry-ontology-sim" / "data" / "derived"
-    src = args.source or sibling
-    files = ["patient_cost_summary.csv", "department_spend.csv", "high_risk_top_spenders.csv"]
-    if src.exists() and all((src / f).exists() for f in files):
-        for f in files:
-            shutil.copy(src / f, out / f)
-        print(f"Copied corpus from {src}")
-    else:
-        pd.DataFrame(
-            {"department": ["ED", "IP", "OP"], "total_cost": [120000, 98000, 45000]}
-        ).to_csv(out / "department_spend.csv", index=False)
-        pd.DataFrame(
-            {
-                "patient_id": ["P00001", "P00002"],
-                "risk_tier": ["HIGH", "HIGH"],
-                "total_cost_usd": [12000, 9500],
-            }
-        ).to_csv(out / "high_risk_top_spenders.csv", index=False)
-        pd.DataFrame(
-            {
-                "patient_id": ["P00001", "P00002", "P00003"],
-                "encounter_count": [4, 2, 7],
-                "total_cost_usd": [15000, 8000, 22000],
-            }
-        ).to_csv(out / "patient_cost_summary.csv", index=False)
-        print("Wrote minimal fallback corpus")
-
-
-if __name__ == "__main__":
-    main()
+ROOT = Path(__file__).resolve().parents[1]
+DATA = ROOT / "data"; DATA.mkdir(parents=True, exist_ok=True)
+# Prefer reading foundry sim data if present; else minimal
+foundry = ROOT.parent / "palantir-foundry-ontology-sim" / "data" / "encounter.csv"
+if foundry.exists():
+    enc = pd.read_csv(foundry)
+    dept = pd.read_csv(foundry.parent / "department.csv")
+else:
+    enc = pd.DataFrame({
+        "encounter_id": [f"E{i:04d}" for i in range(100)],
+        "length_of_stay_hours": [30] * 100,
+        "status": ["OPEN"] * 100,
+        "department_id": ["D2"] * 100,
+    })
+    dept = pd.DataFrame({"department_id": ["D2"], "department_name": ["MedSurg"]})
+enc.to_csv(DATA / "encounter.csv", index=False)
+dept.to_csv(DATA / "department.csv", index=False)
+Path(DATA / "freshness_ok.txt").write_text("as_of=2024-09-01T10:00:00Z\nnow=2024-09-01T11:00:00Z\n", encoding="utf-8")
+Path(DATA / "freshness_stale.txt").write_text("as_of=2024-09-01T10:00:00Z\nnow=2024-09-01T16:30:00Z\n", encoding="utf-8")
+print("analyst fixtures ready")
